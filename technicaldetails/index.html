@@ -318,18 +318,17 @@ This can create a situation where the first task to be executed is queued for co
 <h5 id="more-on-dyno-queues">More on dyno queues<a class="headerlink" href="#more-on-dyno-queues" title="Permanent link">&para;</a></h5>
 <p>Dyno queues are the default queuing mechanism of conductor.</p>
 <p>Queues are allocated and used for:
-<em> Task execution - each task type gets a queue
-</em> Workflow execution - single queue with all currently executing workflows (deciderQueue)
+* Task execution - each task type gets a queue
+* Workflow execution - single queue with all currently executing workflows (deciderQueue)
   * This queue is used by SweeperService</p>
 <p><strong>Each conductor server instance gets its own set of queues</strong>. Or more precisely a queue shard of its own.
 This means that if you have 2 task types, you end up with 6 queues altogether e.g.</p>
-<div class="codehilite"><pre><span></span>conductor_queues.test.QUEUE._deciderQueue.c
+<pre class="codehilite"><code>conductor_queues.test.QUEUE._deciderQueue.c
 conductor_queues.test.QUEUE._deciderQueue.d
 conductor_queues.test.QUEUE.HTTP.c
 conductor_queues.test.QUEUE.HTTP.d
 conductor_queues.test.QUEUE.LAMBDA.c
-conductor_queues.test.QUEUE.LAMBDA.d
-</pre></div>
+conductor_queues.test.QUEUE.LAMBDA.d</code></pre>
 
 
 <blockquote>
@@ -337,10 +336,9 @@ conductor_queues.test.QUEUE.LAMBDA.d
 <p>The shard names are extracted from dynomite rack name such as us-east-1c that is set in "LOCAL_RACK" or "EC2_AVAILABILTY_ZONE"</p>
 </blockquote>
 <p>Considering an execution of a simple workflow with just 2 tasks: [HTTP, LAMBDA], you should end up with queues being filled as follows:</p>
-<div class="codehilite"><pre><span></span>Workflow execution    -&gt; conductor_queues.test.QUEUE._deciderQueue.c
+<pre class="codehilite"><code>Workflow execution    -&gt; conductor_queues.test.QUEUE._deciderQueue.c
 HTTP taks execution   -&gt; conductor_queues.test.QUEUE.HTTP.d
-LAMBDA task execution -&gt; conductor_queues.test.QUEUE.LAMBDA.c
-</pre></div>
+LAMBDA task execution -&gt; conductor_queues.test.QUEUE.LAMBDA.c</code></pre>
 
 
 <p>Which means that SweeperService in conductor instance #1 is responsible for sweeping the workflow, conductor #2 is responsible for executing HTTP task and conductor #1 again responsible for executing LAMBDA task.</p>
@@ -356,15 +354,14 @@ Meaning that a workflow and its task executions are queued only for the conducto
 <p>The downside here is that the workload is not distributed across all conductor servers. Which might be an advantage in active-standby deployments.</p>
 <p>Considering other downsides ...</p>
 <p>Considering a situation where a conductor instance goes down:
-<em> With local-only strategy, the workflow executions from failed conductor instance will not progress until:
+* With local-only strategy, the workflow executions from failed conductor instance will not progress until:
   * The conductor instance is restarted or
   * The executions are manually terminated and restarted from a different node
-</em> With round-robin strategy, there is a chance the tasks will be rescheduled on a different conductor node
+* With round-robin strategy, there is a chance the tasks will be rescheduled on a different conductor node
   * This is nondeterministic though</p>
 <p><strong>Enabling local only queue allocation strategy for dyno queues:</strong></p>
 <p>Just enable following setting the config.properties:</p>
-<div class="codehilite"><pre><span></span>workflow.dyno.queue.sharding.strategy=localOnly
-</pre></div>
+<pre class="codehilite"><code>workflow.dyno.queue.sharding.strategy=localOnly</code></pre>
 
 
 <blockquote>
